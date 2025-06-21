@@ -289,6 +289,12 @@ export function parseStatusOutput(output: string): SvnStatus[] {
  */
 export function parseLogOutput(output: string): SvnLogEntry[] {
   const entries: SvnLogEntry[] = [];
+  
+  if (!output || output.trim().length === 0) {
+    return entries;
+  }
+  
+  // Dividir por las líneas separadoras de SVN log
   const logEntries = output.split(/^-{72}$/gm).filter(entry => entry.trim());
   
   for (const entryText of logEntries) {
@@ -296,18 +302,24 @@ export function parseLogOutput(output: string): SvnLogEntry[] {
     if (lines.length < 2) continue;
     
     const headerLine = lines[0];
-    const headerMatch = headerLine.match(/^r(\d+) \| ([^|]+) \| ([^|]+) \| (.+)$/);
+    // Patrón más flexible para el header
+    const headerMatch = headerLine.match(/^r(\d+)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|\s*(.*)$/);
     
     if (headerMatch) {
-      const [, revision, author, date, details] = headerMatch;
-      const message = lines.slice(2).join('\n').trim();
-      
-      entries.push({
-        revision: parseInt(revision, 10),
-        author: author.trim(),
-        date: date.trim(),
-        message
-      });
+      try {
+        const [, revision, author, date, details] = headerMatch;
+        const message = lines.slice(2).join('\n').trim();
+        
+        entries.push({
+          revision: parseInt(revision, 10),
+          author: author.trim(),
+          date: date.trim(),
+          message: message || 'Sin mensaje'
+        });
+      } catch (parseError) {
+        console.warn(`Warning: Failed to parse log entry: ${parseError}`);
+        continue;
+      }
     }
   }
   

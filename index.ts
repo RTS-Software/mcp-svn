@@ -64,6 +64,53 @@ server.tool(
   }
 );
 
+// 1.1. Diagnóstico avanzado de comandos SVN
+server.tool(
+  "svn_diagnose",
+  "Diagnosticar problemas específicos con comandos SVN",
+  {},
+  async () => {
+    try {
+      const result = await getSvnService().diagnoseCommands();
+      const data = result.data!;
+      
+      const statusLocalIcon = data.statusLocal ? '✅' : '❌';
+      const statusRemoteIcon = data.statusRemote ? '✅' : '❌';
+      const logIcon = data.logBasic ? '✅' : '❌';
+      
+      let diagnosticText = `🔍 **Diagnóstico de Comandos SVN**\n\n` +
+        `**Directorio de Trabajo:** ${data.workingCopyPath}\n\n` +
+        `${statusLocalIcon} **Status Local:** ${data.statusLocal ? 'Funciona' : 'Falló'}\n` +
+        `${statusRemoteIcon} **Status Remoto:** ${data.statusRemote ? 'Funciona' : 'Falló'}\n` +
+        `${logIcon} **Log Básico:** ${data.logBasic ? 'Funciona' : 'Falló'}\n`;
+      
+      if (data.errors.length > 0) {
+        diagnosticText += `\n**Errores Detectados:**\n`;
+        data.errors.forEach((error, index) => {
+          diagnosticText += `${index + 1}. ${error}\n`;
+        });
+      }
+      
+      // Añadir sugerencias basadas en los errores
+      if (!data.statusRemote || !data.logBasic) {
+        diagnosticText += `\n**Posibles Soluciones:**\n`;
+        diagnosticText += `• Verificar conexión a internet\n`;
+        diagnosticText += `• Verificar credenciales de SVN\n`;
+        diagnosticText += `• Ejecutar 'svn cleanup' si hay problemas de lock\n`;
+        diagnosticText += `• Verificar que el working copy esté actualizado\n`;
+      }
+
+      return {
+        content: [{ type: "text", text: diagnosticText }],
+      };
+    } catch (error: any) {
+      return {
+        content: [{ type: "text", text: `❌ **Error en diagnóstico:** ${error.message}` }],
+      };
+    }
+  }
+);
+
 // 2. Obtener información del repositorio
 server.tool(
   "svn_info",
