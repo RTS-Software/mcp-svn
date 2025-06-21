@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from '@jest/globals';
-import { SvnService } from '../tools/svn-service.js';
-import { createSvnConfig, validateSvnInstallation } from '../common/utils.js';
+import { SvnService } from '../tools/svn-service';
+import { createSvnConfig, validateSvnInstallation } from '../common/utils';
 
 describe('SVN MCP Integration Tests', () => {
   let svnService: SvnService;
@@ -25,15 +25,19 @@ describe('SVN MCP Integration Tests', () => {
       const result = await svnService.healthCheck();
       
       expect(result).toBeDefined();
-      expect(result.command).toBe('health-check');
       expect(result.workingDirectory).toBeDefined();
       expect(typeof result.success).toBe('boolean');
       
-      if (result.data) {
+      // El comando puede ser 'health-check' si SVN está disponible o 'svn --version' si no lo está
+      expect(['health-check', 'svn --version']).toContain(result.command);
+      
+      if (result.success && result.data) {
         expect(typeof result.data.svnAvailable).toBe('boolean');
-        expect(result.data.version).toBeDefined();
-        expect(typeof result.data.workingCopyValid).toBe('boolean');
-        expect(typeof result.data.repositoryAccessible).toBe('boolean');
+        if (result.data.svnAvailable) {
+          expect(result.data.version).toBeDefined();
+          expect(typeof result.data.workingCopyValid).toBe('boolean');
+          expect(typeof result.data.repositoryAccessible).toBe('boolean');
+        }
       }
     });
   });
@@ -79,7 +83,10 @@ describe('SVN MCP Integration Tests', () => {
     });
 
     it('should handle SVN info gracefully when not in working copy', async () => {
-      if (!svnAvailable) return;
+      if (!svnAvailable) {
+        console.log('Skipping SVN info test - SVN not available');
+        return;
+      }
 
       try {
         await svnService.getInfo();
@@ -92,7 +99,10 @@ describe('SVN MCP Integration Tests', () => {
     });
 
     it('should handle SVN status gracefully when not in working copy', async () => {
-      if (!svnAvailable) return;
+      if (!svnAvailable) {
+        console.log('Skipping SVN status test - SVN not available');
+        return;
+      }
 
       try {
         await svnService.getStatus();
