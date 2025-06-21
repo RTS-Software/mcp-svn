@@ -88,7 +88,10 @@ export async function executeSvnCommand(
   options: { input?: string; encoding?: BufferEncoding } = {}
 ): Promise<SvnResponse> {
   const startTime = Date.now();
-  const command = `${config.svnPath} ${args.join(' ')}`;
+  
+  // Agregar argumentos de autenticación
+  const finalArgs = [...args, ...buildAuthArgs(config)];
+  const command = `${config.svnPath} ${finalArgs.join(' ')}`;
   
   return new Promise((resolve, reject) => {
     // Configurar opciones de spawn para Windows
@@ -103,9 +106,6 @@ export async function executeSvnCommand(
         LC_ALL: 'en_US.UTF-8'
       }
     };
-
-    // Agregar argumentos de autenticación
-    const finalArgs = [...args, ...buildAuthArgs(config)];
     
     const childProcess = spawn(config.svnPath!, finalArgs, spawnOptions);
     

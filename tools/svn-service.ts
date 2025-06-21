@@ -35,6 +35,16 @@ export class SvnService {
   }
 
   /**
+   * Función auxiliar para manejar errores comunes de SVN
+   */
+  private handleSvnError(error: any, operation: string): never {
+    if (error.message.includes('E155007') || error.message.includes('not a working copy')) {
+      throw new SvnError(`El directorio '${this.config.workingDirectory}' no es un working copy de SVN. Asegúrate de estar en un directorio que contenga un repositorio SVN o hacer checkout primero.`);
+    }
+    throw new SvnError(`Failed to ${operation}: ${error.message}`);
+  }
+
+  /**
    * Verificar que SVN está disponible y configurado correctamente
    */
   async healthCheck(): Promise<SvnResponse<{
@@ -119,7 +129,7 @@ export class SvnService {
       };
 
     } catch (error: any) {
-      throw new SvnError(`Failed to get SVN info: ${error.message}`);
+      this.handleSvnError(error, 'get SVN info');
     }
   }
 
@@ -153,7 +163,7 @@ export class SvnService {
       };
 
     } catch (error: any) {
-      throw new SvnError(`Failed to get SVN status: ${error.message}`);
+      this.handleSvnError(error, 'get SVN status');
     }
   }
 
