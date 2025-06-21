@@ -18,16 +18,67 @@ Un servidor MCP (Model Context Protocol) completo para integración con Subversi
 - **Subversion (SVN)** instalado y disponible en PATH
 - **TypeScript** (para desarrollo)
 
-### Verificar instalación de SVN
+### 🔍 Detectar instalación de SVN
+
+#### Verificar si SVN está instalado
 
 ```bash
+# Comando básico para verificar SVN
 svn --version
+
+# Verificar ruta completa del ejecutable
+where svn        # Windows
+which svn        # Linux/Mac
+
+# Verificar cliente SVN completo
+svn --version --verbose
 ```
 
-### Instalar SVN en Windows
+#### Salida esperada si SVN está correctamente instalado:
+
+```
+svn, version 1.14.x (r1876290)
+   compiled Apr 13 2023, 17:22:07 on x86_64-pc-mingw32
+
+Copyright (C) 2023 The Apache Software Foundation.
+This software consists of contributions made by many people;
+see the NOTICE file for more information.
+Subversion is open source software, see http://subversion.apache.org/
+```
+
+#### ❌ Errores comunes si SVN NO está instalado:
 
 ```bash
-# Usando Chocolatey
+# Windows
+'svn' is not recognized as an internal or external command
+
+# Linux/Mac  
+svn: command not found
+bash: svn: command not found
+```
+
+#### 🛠️ Diagnóstico avanzado
+
+```bash
+# Verificar PATH del sistema
+echo $PATH                    # Linux/Mac
+echo %PATH%                   # Windows CMD
+$env:PATH                     # Windows PowerShell
+
+# Buscar executables SVN en el sistema
+find / -name "svn" 2>/dev/null           # Linux
+Get-ChildItem -Path C:\ -Name "svn.exe" -Recurse -ErrorAction SilentlyContinue  # Windows PowerShell
+
+# Verificar versión específica del cliente
+svn --version | head -1       # Obtener solo la primera línea con la versión
+```
+
+### 💾 Instalar SVN en Windows
+
+#### Opción 1: Gestores de paquetes
+
+```bash
+# Usando Chocolatey (Recomendado)
 choco install subversion
 
 # Usando winget
@@ -35,6 +86,97 @@ winget install CollabNet.Subversion
 
 # Usando Scoop
 scoop install subversion
+```
+
+#### Opción 2: Instaladores oficiales
+
+1. **TortoiseSVN** (incluye cliente de línea de comandos):
+   ```
+   https://tortoisesvn.net/downloads.html
+   ✅ Incluye cliente GUI y CLI
+   ✅ Integración con Windows Explorer
+   ```
+
+2. **SlikSVN** (solo línea de comandos):
+   ```
+   https://sliksvn.com/download/
+   ✅ Ligero (solo CLI)
+   ✅ Ideal para automatización
+   ```
+
+3. **CollabNet Subversion**:
+   ```
+   https://www.collab.net/downloads/subversion
+   ✅ Versión empresarial
+   ✅ Soporte comercial disponible
+   ```
+
+#### Opción 3: Visual Studio o Git for Windows
+
+```bash
+# Si tienes Git for Windows instalado, puede incluir SVN
+git svn --version
+
+# Visual Studio también puede incluir SVN
+# Ir a: Visual Studio Installer > Modify > Individual Components > Subversion
+```
+
+### 🐧 Instalar SVN en Linux
+
+```bash
+# Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install subversion
+
+# CentOS/RHEL/Fedora
+sudo yum install subversion        # CentOS 7
+sudo dnf install subversion        # CentOS 8/Fedora
+
+# Arch Linux
+sudo pacman -S subversion
+
+# Alpine Linux
+sudo apk add subversion
+```
+
+### 🍎 Instalar SVN en macOS
+
+```bash
+# Homebrew (Recomendado)
+brew install subversion
+
+# MacPorts
+sudo port install subversion
+
+# Desde Xcode Command Line Tools (puede estar incluido)
+xcode-select --install
+```
+
+### 🔧 Configurar SVN después de la instalación
+
+#### Verificar configuración global
+
+```bash
+# Ver configuración actual
+svn config --list
+
+# Configurar usuario global
+svn config --global auth:username tu_usuario
+
+# Configurar editor por defecto
+svn config --global editor "code --wait"     # VS Code
+svn config --global editor "notepad"         # Windows Notepad
+svn config --global editor "nano"            # Linux/Mac nano
+```
+
+#### Verificar acceso a repositorios
+
+```bash
+# Probar conexión a repositorio (sin hacer checkout)
+svn list https://svn.ejemplo.com/repo/trunk
+
+# Probar con credenciales específicas
+svn list https://svn.ejemplo.com/repo/trunk --username usuario --password contraseña
 ```
 
 ## 🚀 Instalación
