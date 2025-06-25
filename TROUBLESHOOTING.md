@@ -139,6 +139,10 @@ svn status
 - **Causa**: Credenciales incorrectas
 - **Solución**: Verificar SVN_USERNAME y SVN_PASSWORD
 
+### Error: "E215004: No more credentials or we tried too many times"
+- **Causa**: Demasiados intentos de autenticación fallidos - credenciales pueden estar cacheadas incorrectamente
+- **Solución**: Ejecutar `svn_clear_credentials()` para limpiar el cache de credenciales SVN
+
 ### Error: "Working copy locked"
 - **Causa**: Operación SVN anterior se interrumpió
 - **Solución**: Ejecutar `svn_cleanup()`

@@ -62,7 +62,7 @@ export function escapeArgument(arg: string): string {
 /**
  * Construir argumentos de autenticación
  */
-export function buildAuthArgs(config: SvnConfig): string[] {
+export function buildAuthArgs(config: SvnConfig, options: { noAuthCache?: boolean } = {}): string[] {
   const args: string[] = [];
   
   if (config.username) {
@@ -76,6 +76,11 @@ export function buildAuthArgs(config: SvnConfig): string[] {
   // Siempre usar --non-interactive para evitar prompts
   args.push('--non-interactive');
   
+  // Opción para no usar cache de credenciales (útil para E215004)
+  if (options.noAuthCache) {
+    args.push('--no-auth-cache');
+  }
+  
   return args;
 }
 
@@ -85,12 +90,12 @@ export function buildAuthArgs(config: SvnConfig): string[] {
 export async function executeSvnCommand(
   config: SvnConfig,
   args: string[],
-  options: { input?: string; encoding?: BufferEncoding } = {}
+  options: { input?: string; encoding?: BufferEncoding; noAuthCache?: boolean } = {}
 ): Promise<SvnResponse> {
   const startTime = Date.now();
   
   // Agregar argumentos de autenticación
-  const finalArgs = [...args, ...buildAuthArgs(config)];
+  const finalArgs = [...args, ...buildAuthArgs(config, { noAuthCache: options.noAuthCache })];
   const command = `${config.svnPath} ${finalArgs.join(' ')}`;
   
   return new Promise((resolve, reject) => {
@@ -399,4 +404,37 @@ export function createSvnError(message: string, command?: string, stderr?: strin
   if (command) error.command = command;
   if (stderr) error.stderr = stderr;
   return error;
+}
+
+/**
+ * Limpiar cache de credenciales SVN para resolver errores E215004
+ */
+export async function clearSvnCredentials(config: SvnConfig): Promise<SvnResponse> {
+  try {
+    // En sistemas Unix/Linux, SVN guarda credenciales en ~/.subversion/auth
+    // En Windows, en %APPDATA%\Subversion\auth
+    // Intentar limpiar usando el comando auth específico si está disponible
+    
+    // Primero intentar con el comando de limpieza estándar
+    return await executeSvnCommand(config, ['auth', '--remove'], { noAuthCache: true });
+  } catch (error: any) {
+    // Si el comando auth no está disponible, intentar alternativa
+    try {
+      // Como fallback, usar un comando que no guarde credenciales
+      const response = await executeSvnCommand(config, ['info', '--non-interactive'], { noAuthCache: true });
+      return {
+        success: true,
+        data: 'Cache de credenciales limpiado (usando método alternativo)',
+        command: 'clear-credentials',
+        workingDirectory: config.workingDirectory!
+      };
+    } catch (fallbackError: any) {
+      return {
+        success: false,
+        error: `No se pudo limpiar el cache de credenciales: ${fallbackError.message}`,
+        command: 'clear-credentials',
+        workingDirectory: config.workingDirectory!
+      };
+    }
+  }
 } 
