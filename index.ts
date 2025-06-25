@@ -537,6 +537,34 @@ server.tool(
   }
 );
 
+// 13. Limpiar cache de credenciales SVN (para resolver errores E215004)
+server.tool(
+  "svn_clear_credentials",
+  "Limpiar cache de credenciales SVN para resolver errores de autenticación",
+  {},
+  async () => {
+    try {
+      const result = await getSvnService().clearCredentials();
+      
+      const clearText = `🔐 **Cache de Credenciales Limpiado**\n\n` +
+        `**Comando:** ${result.command}\n` +
+        `**Tiempo de Ejecución:** ${formatDuration(result.executionTime || 0)}\n\n` +
+        `**Resultado:**\n\`\`\`\n${result.data}\n\`\`\`\n\n` +
+        `**Nota:** Esto puede ayudar a resolver errores como:\n` +
+        `• E215004: No more credentials or we tried too many times\n` +
+        `• Errores de autenticación por credenciales cacheadas incorrectamente`;
+
+      return {
+        content: [{ type: "text", text: clearText }],
+      };
+    } catch (error: any) {
+      return {
+        content: [{ type: "text", text: `❌ **Error:** ${error.message}` }],
+      };
+    }
+  }
+);
+
 async function runServer() {
   try {
     console.error("Creating SVN MCP Server...");
@@ -577,6 +605,7 @@ async function runServer() {
     console.error("MCP Server connected and ready!");
     console.error("Available tools:", [
       "svn_health_check",
+      "svn_diagnose",
       "svn_info",
       "svn_status",
       "svn_log",
@@ -587,7 +616,8 @@ async function runServer() {
       "svn_commit",
       "svn_delete",
       "svn_revert",
-      "svn_cleanup"
+      "svn_cleanup",
+      "svn_clear_credentials"
     ]);
     
   } catch (error) {

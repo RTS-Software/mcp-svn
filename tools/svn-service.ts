@@ -24,7 +24,8 @@ import {
   validatePath,
   validateSvnUrl,
   cleanOutput,
-  formatDuration
+  formatDuration,
+  clearSvnCredentials
 } from '../common/utils.js';
 
 export class SvnService {
@@ -764,7 +765,17 @@ export class SvnService {
       };
     }
     
-    // Errores de autenticación
+    // Errores de autenticación - demasiados intentos
+    if (error.message.includes('E215004') || 
+        error.message.includes('No more credentials') ||
+        error.message.includes('we tried too many times')) {
+      return {
+        message: `${baseMessage}: Demasiados intentos de autenticación fallidos`,
+        suggestion: 'Las credenciales pueden estar incorrectas o cachadas. Limpia el cache de credenciales SVN y verifica SVN_USERNAME y SVN_PASSWORD'
+      };
+    }
+    
+    // Errores de autenticación generales
     if (error.message.includes('E170001') || 
         error.message.includes('Authentication failed') ||
         error.message.includes('authorization failed')) {
@@ -805,5 +816,12 @@ export class SvnService {
       message: `${baseMessage}: ${error.message}`,
       suggestion: undefined
     };
+  }
+
+  /**
+   * Limpiar cache de credenciales SVN para resolver errores de autenticación
+   */
+  async clearCredentials(): Promise<SvnResponse> {
+    return await clearSvnCredentials(this.config);
   }
 } 

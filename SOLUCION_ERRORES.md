@@ -21,6 +21,7 @@ Las funciones `svn_status` y `svn_log` estaban fallando con código de error 1, 
   - `E155007`: No es un working copy
   - `E175002`: Problemas de conexión
   - `E170001`: Error de autenticación
+  - `E215004`: Demasiados intentos de autenticación (nuevo)
   - `E155036`: Working copy bloqueado
   - `E200030`: Error de base de datos SQLite
 
@@ -34,7 +35,12 @@ Las funciones `svn_status` y `svn_log` estaban fallando con código de error 1, 
   - Lista de errores específicos
   - Sugerencias de solución
 
-### 4. Parsing Mejorado
+### 4. Nueva Función de Limpieza de Credenciales
+- **Función**: `svn_clear_credentials`
+- **Propósito**: Limpiar cache de credenciales SVN para resolver errores E215004
+- **Beneficio**: Resuelve problemas cuando SVN ha intentado autenticarse demasiadas veces
+
+### 5. Parsing Mejorado
 - **svn log**: Parsing más robusto con manejo de casos edge
 - **Validación**: Mejor validación de entrada vacía o malformada
 
@@ -52,7 +58,13 @@ svn_diagnose
 svn_health_check
 ```
 
-### 3. Obtener Status (Mejorado)
+### 3. Limpiar Cache de Credenciales (Nuevo)
+```bash
+# Limpiar credenciales cacheadas (para resolver E215004)
+svn_clear_credentials
+```
+
+### 4. Obtener Status (Mejorado)
 ```bash
 # Ahora funciona incluso sin conexión remota
 svn_status
@@ -89,8 +101,9 @@ svn_status
 
 ### Para Problemas de Autenticación:
 1. Verificar credenciales en variables de entorno
-2. Probar login manual con SVN
+2. Probar login manual con SVN  
 3. Renovar credenciales si han expirado
+4. **Nuevo:** Si aparece el error E215004 "No more credentials or we tried too many times", usar `svn_clear_credentials` para limpiar el cache de credenciales
 
 ### Para Problemas del Working Copy:
 1. Ejecutar `svn cleanup`
