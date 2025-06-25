@@ -349,8 +349,21 @@ export function formatDuration(milliseconds: number): string {
  */
 export function validatePath(filePath: string): boolean {
   // Verificar que no contenga caracteres prohibidos en Windows
-  const invalidChars = /[<>:"|?*]/;
-  return !invalidChars.test(filePath);
+  // Pero permitir dos puntos en contextos válidos (drive letters en Windows)
+  
+  // Patrón para detectar rutas absolutas de Windows (C:, D:, etc.)
+  const windowsAbsolutePathPattern = /^[A-Za-z]:[\\\/]/;
+  
+  if (windowsAbsolutePathPattern.test(filePath)) {
+    // Para rutas absolutas de Windows, verificar solo después del drive letter
+    const pathAfterDrive = filePath.substring(2); // Quitar "C:" o similar
+    const invalidChars = /[<>:"|?*]/;
+    return !invalidChars.test(pathAfterDrive);
+  } else {
+    // Para todas las demás rutas, aplicar validación completa
+    const invalidChars = /[<>:"|?*]/;
+    return !invalidChars.test(filePath);
+  }
 }
 
 /**
