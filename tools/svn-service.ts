@@ -126,10 +126,16 @@ export class SvnService {
     try {
       const args = ['info'];
       if (path) {
-        if (!validatePath(path)) {
-          throw new SvnError(`Invalid path: ${path}`);
+        // Check if it's a URL or a local path
+        if (validateSvnUrl(path)) {
+          // It's a URL, add it directly without normalization
+          args.push(path);
+        } else if (validatePath(path)) {
+          // It's a local path, normalize it
+          args.push(normalizePath(path));
+        } else {
+          throw new SvnError(`Invalid path or URL: ${path}`);
         }
-        args.push(normalizePath(path));
       }
 
       const response = await executeSvnCommand(this.config, args);
