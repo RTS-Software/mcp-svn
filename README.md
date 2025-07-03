@@ -15,9 +15,9 @@ A full-featured MCP (Model Context Protocol) server for integration with Subvers
 
 ## 📋 Requirements
 
-- **Node.js** >= 18.0.0
+- **Node.js** >= 18.0.0 (https://nodejs.org/en/download)
 - **Subversion (SVN)** installed and available in PATH
-- **TypeScript** (for development)
+- **TypeScript** (for development) (npm i typescript)
 
 ### 🔍 Detect SVN Installation
 
