@@ -10,6 +10,10 @@ import { formatDuration } from "./common/utils.js";
 
 import { VERSION } from "./common/version.js";
 
+import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os'; 
+
 // Create the MCP Server with proper configuration
 const server = new McpServer({
   name: "svn-mcp-server",
@@ -18,6 +22,26 @@ const server = new McpServer({
 
 // Create SVN service instance (lazy initialization)
 let svnService: SvnService | null = null;
+
+function logToFileParam(message: string, param: string): void {
+  const logDir = 'C:\\Logs';
+  const logFile = path.join(logDir, 'mcp_svn.log');
+  try {
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true });
+    }
+    const timestamp = new Date().toISOString();
+    fs.appendFileSync(logFile, `[${timestamp}] ${message}: ${param}${os.EOL}`);
+  } catch (err) {
+    // For debugging: print error to stderr
+    console.error('Failed to write to log file:', err);
+  }
+}
+
+function logToFile(m: string): void {
+  logToFileParam(m, "");
+}
+
 
 function getSvnService(): SvnService {
   if (!svnService) {
@@ -30,15 +54,16 @@ function getSvnService(): SvnService {
   return svnService;
 }
 
-// ----- HERRAMIENTAS MCP PARA SUBVERSION (SVN) -----
+// ----- MCP TOOLS FOR SUBVERSION (SVN) -----
 
-// 1. Health Check del sistema SVN
+// 1. SVN System Health Check
 server.tool(
   "svn_health_check",
-  "Verificar el estado de salud del sistema SVN y working copy",
+  "Check the health status of the SVN system and working copy",
   {},
   async () => {
     try {
+      logToFile("Running svn_health_check tool");
       const result = await getSvnService().healthCheck();
       
       const data = result.data;
@@ -46,12 +71,12 @@ server.tool(
       const wcIcon = data?.workingCopyValid ? '📁' : '📂';
       const repoIcon = data?.repositoryAccessible ? '🔗' : '🔌';
       
-      const healthText = `${statusIcon} **Estado del Sistema SVN**\n\n` +
-        `**SVN Disponible:** ${data?.svnAvailable ? 'Sí' : 'No'}\n` +
-        `**Versión:** ${data?.version || 'N/A'}\n` +
-        `${wcIcon} **Working Copy Válido:** ${data?.workingCopyValid ? 'Sí' : 'No'}\n` +
-        `${repoIcon} **Repositorio Accesible:** ${data?.repositoryAccessible ? 'Sí' : 'No'}\n` +
-        `**Directorio de Trabajo:** ${result.workingDirectory}`;
+      const healthText = `${statusIcon} **SVN System Status**\n\n` +
+        `**SVN Available:** ${data?.svnAvailable ? 'Yes' : 'No'}\n` +
+        `**Version:** ${data?.version || 'N/A'}\n` +
+        `${wcIcon} **Working Copy Valid:** ${data?.workingCopyValid ? 'Yes' : 'No'}\n` +
+        `${repoIcon} **Repository Accessible:** ${data?.repositoryAccessible ? 'Yes' : 'No'}\n` +
+        `**Working Directory:** ${result.workingDirectory}`;
 
       return {
         content: [{ type: "text", text: healthText }],
@@ -64,13 +89,14 @@ server.tool(
   }
 );
 
-// 1.1. Diagnóstico avanzado de comandos SVN
+// 1.1. Advanced SVN Command Diagnostics
 server.tool(
   "svn_diagnose",
-  "Diagnosticar problemas específicos con comandos SVN",
+  "Diagnose specific problems with SVN commands",
   {},
   async () => {
     try {
+      logToFile("Running svn_diagnose tool");
       const result = await getSvnService().diagnoseCommands();
       const data = result.data!;
       
@@ -78,26 +104,26 @@ server.tool(
       const statusRemoteIcon = data.statusRemote ? '✅' : '❌';
       const logIcon = data.logBasic ? '✅' : '❌';
       
-      let diagnosticText = `🔍 **Diagnóstico de Comandos SVN**\n\n` +
-        `**Directorio de Trabajo:** ${data.workingCopyPath}\n\n` +
-        `${statusLocalIcon} **Status Local:** ${data.statusLocal ? 'Funciona' : 'Falló'}\n` +
-        `${statusRemoteIcon} **Status Remoto:** ${data.statusRemote ? 'Funciona' : 'Falló'}\n` +
-        `${logIcon} **Log Básico:** ${data.logBasic ? 'Funciona' : 'Falló'}\n`;
+      let diagnosticText = `🔍 **SVN Command Diagnostics**\n\n` +
+        `**Working Directory:** ${data.workingCopyPath}\n\n` +
+        `${statusLocalIcon} **Local Status:** ${data.statusLocal ? 'Works' : 'Failed'}\n` +
+        `${statusRemoteIcon} **Remote Status:** ${data.statusRemote ? 'Works' : 'Failed'}\n` +
+        `${logIcon} **Basic Log:** ${data.logBasic ? 'Works' : 'Failed'}\n`;
       
       if (data.errors.length > 0) {
-        diagnosticText += `\n**Errores Detectados:**\n`;
+        diagnosticText += `\n**Detected Errors:**\n`;
         data.errors.forEach((error, index) => {
           diagnosticText += `${index + 1}. ${error}\n`;
         });
       }
       
-      // Añadir sugerencias basadas en los errores
+      // Add suggestions based on errors
       if (!data.statusRemote || !data.logBasic) {
-        diagnosticText += `\n**Posibles Soluciones:**\n`;
-        diagnosticText += `• Verificar conexión a internet\n`;
-        diagnosticText += `• Verificar credenciales de SVN\n`;
-        diagnosticText += `• Ejecutar 'svn cleanup' si hay problemas de lock\n`;
-        diagnosticText += `• Verificar que el working copy esté actualizado\n`;
+        diagnosticText += `\n**Possible Solutions:**\n`;
+        diagnosticText += `• Check internet connection\n`;
+        diagnosticText += `• Check SVN credentials\n`;
+        diagnosticText += `• Run 'svn cleanup' if there are lock issues\n`;
+        diagnosticText += `• Ensure the working copy is up to date\n`;
       }
 
       return {
@@ -105,37 +131,38 @@ server.tool(
       };
     } catch (error: any) {
       return {
-        content: [{ type: "text", text: `❌ **Error en diagnóstico:** ${error.message}` }],
+        content: [{ type: "text", text: `❌ **Diagnosis Error:** ${error.message}` }],
       };
     }
   }
 );
 
-// 2. Obtener información del repositorio
+// 2. Get repository information
 server.tool(
   "svn_info",
-  "Obtener información detallada del working copy o archivo específico",
+  "Get detailed information about the working copy or a specific file",
   {
-    path: z.string().optional().describe("Ruta específica a consultar (opcional)")
+    path: z.string().optional().describe("Specific path to query (optional)")
   },
   async (args) => {
     try {
+      logToFile(`Running svn_info tool with path: ${args.path || 'current directory'}`);
       const result = await getSvnService().getInfo(args.path);
       const info = result.data!;
       
-      const infoText = `📋 **Información SVN**\n\n` +
-        `**Ruta:** ${info.path}\n` +
+      const infoText = `📋 **SVN Information**\n\n` +
+        `**Path:** ${info.path}\n` +
         `**URL:** ${info.url}\n` +
-        `**URL Relativa:** ${info.relativeUrl}\n` +
-        `**Raíz del Repositorio:** ${info.repositoryRoot}\n` +
+        `**Relative URL:** ${info.relativeUrl}\n` +
+        `**Repository Root:** ${info.repositoryRoot}\n` +
         `**UUID:** ${info.repositoryUuid}\n` +
-        `**Revisión:** ${info.revision}\n` +
-        `**Tipo de Nodo:** ${info.nodeKind}\n` +
-        `**Último Autor:** ${info.lastChangedAuthor}\n` +
-        `**Última Revisión:** ${info.lastChangedRev}\n` +
-        `**Última Fecha:** ${info.lastChangedDate}\n` +
-        `**Raíz Working Copy:** ${info.workingCopyRootPath}\n` +
-        `**Tiempo de Ejecución:** ${formatDuration(result.executionTime || 0)}`;
+        `**Revision:** ${info.revision}\n` +
+        `**Node Kind:** ${info.nodeKind}\n` +
+        `**Last Author:** ${info.lastChangedAuthor}\n` +
+        `**Last Revision:** ${info.lastChangedRev}\n` +
+        `**Last Date:** ${info.lastChangedDate}\n` +
+        `**Working Copy Root:** ${info.workingCopyRootPath}\n` +
+        `**Execution Time:** ${formatDuration(result.executionTime || 0)}`;
 
       return {
         content: [{ type: "text", text: infoText }],
@@ -148,50 +175,50 @@ server.tool(
   }
 );
 
-// 3. Obtener estado de archivos
+// 3. Get file status
 server.tool(
   "svn_status",
-  "Ver el estado de archivos en el working copy",
+  "View the status of files in the working copy",
   {
-    path: z.string().optional().describe("Ruta específica a consultar"),
-    showAll: z.boolean().optional().default(false).describe("Mostrar estado remoto también")
+    path: z.string().optional().describe("Specific path to query"),
+    showAll: z.boolean().optional().default(false).describe("Show remote status as well")
   },
   async (args) => {
     try {
+      logToFile(`Running svn_status tool with path: ${args.path || 'current directory'}, showAll: ${args.showAll}`);
       const result = await getSvnService().getStatus(args.path, args.showAll);
       const statusList = result.data!;
       
       if (statusList.length === 0) {
         return {
-          content: [{ type: "text", text: "✅ **No hay cambios en el working copy**" }],
+          content: [{ type: "text", text: "✅ **No changes in the working copy**" }],
         };
       }
 
-             const statusText = `📊 **Estado SVN** (${statusList.length} elementos)\n\n` +
-         statusList.map(status => {
-           const statusIcon: {[key: string]: string} = {
-             'added': '➕',
-             'deleted': '➖',
-             'modified': '✏️',
-             'replaced': '🔄',
-             'merged': '🔀',
-             'conflicted': '⚠️',
-             'ignored': '🙈',
-             'none': '⚪',
-             'normal': '✅',
-             'external': '🔗',
-             'incomplete': '⏸️',
-             'unversioned': '❓',
-             'missing': '❌'
-           };
-           
-           return `${statusIcon[status.status] || '📄'} **${status.status.toUpperCase()}** - ${status.path}`;
-         }).join('\n') +
-         `\n\n**Tiempo de Ejecución:** ${formatDuration(result.executionTime || 0)}`;
+      const statusText = `📊 **SVN Status** (${statusList.length} items)\n\n` +
+        statusList.map(status => {
+          const statusIcon: {[key: string]: string} = {
+            'added': '➕',
+            'deleted': '➖',
+            'modified': '✏️',
+            'replaced': '🔄',
+            'merged': '🔀',
+            'conflicted': '⚠️',
+            'ignored': '🙈',
+            'none': '⚪',
+            'normal': '✅',
+            'external': '🔗',
+            'incomplete': '⏸️',
+            'unversioned': '❓',
+            'missing': '❌'
+          };
+          return `${statusIcon[status.status] || '📄'} **${status.status.toUpperCase()}** - ${status.path}`;
+        }).join('\n') +
+        `\n\n**Execution Time:** ${formatDuration(result.executionTime || 0)}`;
 
-       return {
-         content: [{ type: "text", text: statusText }],
-       };
+      return {
+        content: [{ type: "text", text: statusText }],
+      };
     } catch (error: any) {
       return {
         content: [{ type: "text", text: `❌ **Error:** ${error.message}` }],
@@ -200,35 +227,36 @@ server.tool(
   }
 );
 
-// 4. Obtener historial de cambios
+// 4. Get change history
 server.tool(
   "svn_log",
-  "Ver historial de commits del repositorio",
+  "View commit history of the repository",
   {
-    path: z.string().optional().describe("Ruta específica"),
-    limit: z.number().optional().default(10).describe("Número máximo de entradas"),
-    revision: z.string().optional().describe("Revisión específica o rango (ej: 100:200)")
+    path: z.string().optional().describe("Specific path"),
+    limit: z.number().optional().default(10).describe("Maximum number of entries"),
+    revision: z.string().optional().describe("Specific revision or range (e.g. 100:200)")
   },
   async (args) => {
     try {
+      logToFile(`Running svn_log tool with path: ${args.path || 'current directory'}, limit: ${args.limit}, revision: ${args.revision || 'all'}`);
       const result = await getSvnService().getLog(args.path, args.limit, args.revision);
       const logEntries = result.data!;
       
       if (logEntries.length === 0) {
         return {
-          content: [{ type: "text", text: "📝 **No se encontraron entradas en el log**" }],
+          content: [{ type: "text", text: "📝 **No log entries found**" }],
         };
       }
 
-      const logText = `📚 **Historial SVN** (${logEntries.length} entradas)\n\n` +
+      const logText = `📚 **SVN History** (${logEntries.length} entries)\n\n` +
         logEntries.map((entry, index) => 
-          `**${index + 1}. Revisión ${entry.revision}**\n` +
-          `👤 **Autor:** ${entry.author}\n` +
-          `📅 **Fecha:** ${entry.date}\n` +
-          `💬 **Mensaje:** ${entry.message || 'Sin mensaje'}\n` +
+          `**${index + 1}. Revision ${entry.revision}**\n` +
+          `👤 **Author:** ${entry.author}\n` +
+          `📅 **Date:** ${entry.date}\n` +
+          `💬 **Message:** ${entry.message || 'No message'}\n` +
           `---`
         ).join('\n\n') +
-        `\n**Tiempo de Ejecución:** ${formatDuration(result.executionTime || 0)}`;
+        `\n**Execution Time:** ${formatDuration(result.executionTime || 0)}`;
 
       return {
         content: [{ type: "text", text: logText }],
@@ -241,17 +269,18 @@ server.tool(
   }
 );
 
-// 5. Ver diferencias
+// 5. View differences
 server.tool(
   "svn_diff",
-  "Ver diferencias entre versiones de archivos",
+  "View differences between file versions",
   {
-    path: z.string().optional().describe("Ruta específica"),
-    oldRevision: z.string().optional().describe("Revisión antigua"),
-    newRevision: z.string().optional().describe("Revisión nueva")
+    path: z.string().optional().describe("Specific path"),
+    oldRevision: z.string().optional().describe("Old revision"),
+    newRevision: z.string().optional().describe("New revision")
   },
   async (args) => {
     try {
+      logToFile(`Running svn_diff tool with path: ${args.path}, oldRevision: ${args.oldRevision}, newRevision: ${args.newRevision}`);
       const result = await getSvnService().getDiff(args.path, args.oldRevision, args.newRevision);
       const diffOutput = result.data!;
       
@@ -277,20 +306,21 @@ server.tool(
   }
 );
 
-// 6. Checkout de repositorio
+// 6. Repository checkout
 server.tool(
   "svn_checkout",
-  "Hacer checkout de un repositorio SVN",
+  "Checkout an SVN repository",
   {
-    url: z.string().describe("URL del repositorio SVN"),
-    path: z.string().optional().describe("Directorio destino"),
-    revision: z.union([z.number(), z.literal("HEAD")]).optional().describe("Revisión específica"),
-    depth: z.enum(["empty", "files", "immediates", "infinity"]).optional().describe("Profundidad del checkout"),
-    force: z.boolean().optional().default(false).describe("Forzar checkout"),
-    ignoreExternals: z.boolean().optional().default(false).describe("Ignorar externals")
+    url: z.string().describe("SVN repository URL"),
+    path: z.string().optional().describe("Destination directory"),
+    revision: z.union([z.number(), z.literal("HEAD")]).optional().describe("Specific revision"),
+    depth: z.enum(["empty", "files", "immediates", "infinity"]).optional().describe("Checkout depth"),
+    force: z.boolean().optional().default(false).describe("Force checkout"),
+    ignoreExternals: z.boolean().optional().default(false).describe("Ignore externals")
   },
   async (args) => {
     try {
+      logToFile(`Running svn_checkout tool with URL: ${args.url}, path: ${args.path || 'current directory'}, revision: ${args.revision || 'HEAD'}`);
       const options = {
         revision: args.revision,
         depth: args.depth,
@@ -331,6 +361,7 @@ server.tool(
   },
   async (args) => {
     try {
+      logToFile(`Running svn_update tool with path: ${args.path || 'current directory'}, revision: ${args.revision || 'HEAD'}`);
       const options = {
         revision: args.revision,
         force: args.force,
@@ -371,6 +402,7 @@ server.tool(
   },
   async (args) => {
     try {
+      logToFile(`Running svn_add tool with paths: ${Array.isArray(args.paths) ? args.paths.join(', ') : args.paths}`);
       const options = {
         force: args.force,
         noIgnore: args.noIgnore,
@@ -413,6 +445,7 @@ server.tool(
   },
   async (args) => {
     try {
+      logToFile(`Running svn_commit tool with message: ${args.message}, paths: ${args.paths?.join(', ') || 'all changes'}`);
       const options = {
         message: args.message,
         file: args.file,
@@ -441,18 +474,19 @@ server.tool(
   }
 );
 
-// 10. Eliminar archivos
+// 10. Delete files
 server.tool(
   "svn_delete",
-  "Eliminar archivos del control de versiones",
+  "Delete files from version control",
   {
-    paths: z.union([z.string(), z.array(z.string())]).describe("Archivo(s) o directorio(s) a eliminar"),
-    message: z.string().optional().describe("Mensaje para eliminación directa en repositorio"),
-    force: z.boolean().optional().default(false).describe("Forzar eliminación"),
-    keepLocal: z.boolean().optional().default(false).describe("Mantener copia local")
+    paths: z.union([z.string(), z.array(z.string())]).describe("File(s) or directory(ies) to delete"),
+    message: z.string().optional().describe("Message for direct repository deletion"),
+    force: z.boolean().optional().default(false).describe("Force deletion"),
+    keepLocal: z.boolean().optional().default(false).describe("Keep local copy")
   },
   async (args) => {
     try {
+      logToFile(`Running svn_delete tool with paths: ${Array.isArray(args.paths) ? args.paths.join(', ') : args.paths}`);
       const options = {
         message: args.message,
         force: args.force,
@@ -462,12 +496,12 @@ server.tool(
       const result = await getSvnService().delete(args.paths, options);
       const pathsArray = Array.isArray(args.paths) ? args.paths : [args.paths];
       
-      const deleteText = `🗑️ **Archivos Eliminados**\n\n` +
-        `**Archivos:** ${pathsArray.join(', ')}\n` +
-        `**Mantener Local:** ${args.keepLocal ? 'Sí' : 'No'}\n` +
-        `**Comando:** ${result.command}\n` +
-        `**Tiempo de Ejecución:** ${formatDuration(result.executionTime || 0)}\n\n` +
-        `**Resultado:**\n\`\`\`\n${result.data}\n\`\`\``;
+      const deleteText = `🗑️ **Files Deleted**\n\n` +
+        `**Files:** ${pathsArray.join(', ')}\n` +
+        `**Keep Local:** ${args.keepLocal ? 'Yes' : 'No'}\n` +
+        `**Command:** ${result.command}\n` +
+        `**Execution Time:** ${formatDuration(result.executionTime || 0)}\n\n` +
+        `**Result:**\n\`\`\`\n${result.data}\n\`\`\``;
 
       return {
         content: [{ type: "text", text: deleteText }],
@@ -489,6 +523,7 @@ server.tool(
   },
   async (args) => {
     try {
+      logToFile(`Running svn_revert tool with paths: ${Array.isArray(args.paths) ? args.paths.join(', ') : args.paths}`);
       const result = await getSvnService().revert(args.paths);
       const pathsArray = Array.isArray(args.paths) ? args.paths : [args.paths];
       
@@ -518,6 +553,7 @@ server.tool(
   },
   async (args) => {
     try {
+      logToFile(`Running svn_cleanup tool with path: ${args.path || 'current directory'}`);
       const result = await getSvnService().cleanup(args.path);
       
       const cleanupText = `🧹 **Cleanup Completado**\n\n` +
@@ -537,22 +573,23 @@ server.tool(
   }
 );
 
-// 13. Limpiar cache de credenciales SVN (para resolver errores E215004)
+// 13. Clear SVN credentials cache (to resolve E215004 errors)
 server.tool(
   "svn_clear_credentials",
-  "Limpiar cache de credenciales SVN para resolver errores de autenticación",
+  "Clear SVN credentials cache to resolve authentication errors",
   {},
   async () => {
+    logToFile("Running svn_clear_credentials tool");
     try {
       const result = await getSvnService().clearCredentials();
       
-      const clearText = `🔐 **Cache de Credenciales Limpiado**\n\n` +
-        `**Comando:** ${result.command}\n` +
-        `**Tiempo de Ejecución:** ${formatDuration(result.executionTime || 0)}\n\n` +
-        `**Resultado:**\n\`\`\`\n${result.data}\n\`\`\`\n\n` +
-        `**Nota:** Esto puede ayudar a resolver errores como:\n` +
+      const clearText = `🔐 **SVN Credentials Cache Cleared**\n\n` +
+        `**Command:** ${result.command}\n` +
+        `**Execution Time:** ${formatDuration(result.executionTime || 0)}\n\n` +
+        `**Result:**\n\`\`\`\n${result.data}\n\`\`\`\n\n` +
+        `**Note:** This may help resolve errors such as:\n` +
         `• E215004: No more credentials or we tried too many times\n` +
-        `• Errores de autenticación por credenciales cacheadas incorrectamente`;
+        `• Authentication errors due to incorrectly cached credentials`;
 
       return {
         content: [{ type: "text", text: clearText }],
@@ -567,43 +604,45 @@ server.tool(
 
 async function runServer() {
   try {
-    console.error("Creating SVN MCP Server...");
-    console.error("Server info: svn-mcp-server");
-    console.error("Version:", VERSION);
+
+    logToFile("Starting SVN MCP Server...");
+    logToFile("Creating SVN MCP Server...");
+    logToFile("Server info: svn-mcp-server");
+    logToFileParam("Version:", VERSION);
     
     // Validate environment variables
     if (!process.env.SVN_PATH) {
-      console.error("Info: SVN_PATH environment variable not set, using 'svn' from PATH");
+      logToFile("Info: SVN_PATH environment variable not set, using 'svn' from PATH");
     } else {
-      console.error("SVN_PATH:", process.env.SVN_PATH);
+      logToFileParam("SVN_PATH:", process.env.SVN_PATH);
     }
     
     if (!process.env.SVN_WORKING_DIRECTORY) {
-      console.error("Info: SVN_WORKING_DIRECTORY not set, using current directory");
+      logToFile("Info: SVN_WORKING_DIRECTORY not set, using current directory");
     } else {
-      console.error("SVN_WORKING_DIRECTORY:", process.env.SVN_WORKING_DIRECTORY);
+      logToFileParam("SVN_WORKING_DIRECTORY:", process.env.SVN_WORKING_DIRECTORY);
     }
     
     if (process.env.SVN_USERNAME) {
-      console.error("SVN_USERNAME:", process.env.SVN_USERNAME);
+      logToFileParam("SVN_USERNAME:", process.env.SVN_USERNAME);
     }
     
     if (process.env.SVN_PASSWORD) {
-      console.error("SVN_PASSWORD:", "***");
+      logToFileParam("SVN_PASSWORD:", "***");
     }
     
-    console.error("Starting SVN MCP Server in stdio mode...");
+    logToFile("Starting SVN MCP Server in stdio mode...");
     
     // Create transport
     const transport = new StdioServerTransport();
     
-    console.error("Connecting server to transport...");
+    logToFile("Connecting server to transport...");
     
     // Connect server to transport - this should keep the process alive
     await server.connect(transport);
     
-    console.error("MCP Server connected and ready!");
-    console.error("Available tools:", [
+    logToFile("MCP Server connected and ready!");
+    logToFile("Available tools: " + [
       "svn_health_check",
       "svn_diagnose",
       "svn_info",
@@ -618,8 +657,8 @@ async function runServer() {
       "svn_revert",
       "svn_cleanup",
       "svn_clear_credentials"
-    ]);
-    
+    ].join(", "));
+
   } catch (error) {
     console.error("Error starting server:", error);
     console.error("Stack trace:", (error as Error).stack);

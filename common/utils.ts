@@ -3,6 +3,27 @@ import { promisify } from 'util';
 import * as path from 'path';
 import * as fs from 'fs';
 import { SvnConfig, SvnResponse, SvnError, SvnInfo, SvnStatus, SvnLogEntry, SVN_STATUS_CODES } from './types.js';
+import * as os from 'os'; 
+import { log } from 'console';
+
+export function logToFileParam(message: string, param: string): void {
+  const logDir = 'C:\\Logs';
+  const logFile = path.join(logDir, 'mcp_svn.log');
+  try {
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true });
+    }
+    const timestamp = new Date().toISOString();
+    fs.appendFileSync(logFile, `[${timestamp}] ${message}: ${param}${os.EOL}`);
+  } catch (err) {
+    // For debugging: print error to stderr
+    console.error('Failed to write to log file:', err);
+  }
+}
+
+export function logToFile(m: string): void {
+  logToFileParam(m, "");
+}
 
 /**
  * Crear configuración de SVN desde variables de entorno y parámetros
@@ -44,23 +65,47 @@ export async function isWorkingCopy(workingDirectory: string): Promise<boolean> 
 /**
  * Normalizar rutas para Windows
  */
-export function normalizePath(filePath: string): string {
-  return path.resolve(filePath).replace(/\\/g, '/');
+// export function normalizePath(filePath: string): string {
+//   return path.resolve(filePath).replace(/\\/g, '/');
+// }
+
+export function normalizePath(svnWorkingCopy: string, filePath: string): string | null {
+  const trimmedFilePath = filePath.replace(/^[/\\]+/, ''); // make it relative-like
+
+  function searchDir(currentDir: string): string | null {
+    const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(currentDir, entry.name);
+      if (entry.isDirectory()) {
+        const result = searchDir(fullPath);
+        if (result) return result;
+      } else if (entry.isFile()) {
+        const relative = path.relative(svnWorkingCopy, fullPath).replace(/\\/g, '/');
+        if (relative.endsWith(trimmedFilePath)) {
+          return fullPath.replace(/\\/g, '/'); // normalize slashes
+        }
+      }
+    }
+    return null;
+  }
+
+  return searchDir(svnWorkingCopy);
 }
 
+
 /**
- * Escapar argumentos para línea de comandos en Windows
+ * Escape arguments for command line on Windows
  */
 export function escapeArgument(arg: string): string {
-  // Si el argumento contiene espacios o caracteres especiales, lo encerramos en comillas
-  if (/[\s&()<>[\]{}^=;!'+,`~%]/.test(arg)) {
+  // If the argument contains spaces or special characters, wrap it in quotes
+  if (/\s|[&()<>[\]{}^=;!'+,`~%]/.test(arg)) {
     return `"${arg.replace(/"/g, '""')}"`;
   }
   return arg;
 }
 
 /**
- * Construir argumentos de autenticación
+ * Build authentication arguments
  */
 export function buildAuthArgs(config: SvnConfig, options: { noAuthCache?: boolean } = {}): string[] {
   const args: string[] = [];
@@ -73,10 +118,10 @@ export function buildAuthArgs(config: SvnConfig, options: { noAuthCache?: boolea
     args.push('--password', config.password);
   }
   
-  // Siempre usar --non-interactive para evitar prompts
+  // Always use --non-interactive to avoid prompts
   args.push('--non-interactive');
   
-  // Opción para no usar cache de credenciales (útil para E215004)
+  // Option to not use credential cache (useful for E215004)
   if (options.noAuthCache) {
     args.push('--no-auth-cache');
   }
@@ -97,7 +142,8 @@ export async function executeSvnCommand(
   // Agregar argumentos de autenticación
   const finalArgs = [...args, ...buildAuthArgs(config, { noAuthCache: options.noAuthCache })];
   const command = `${config.svnPath} ${finalArgs.join(' ')}`;
-  
+
+  logToFileParam('Executing SVN command', command )
   return new Promise((resolve, reject) => {
     // Configurar opciones de spawn para Windows
     const spawnOptions: SpawnOptions = {
@@ -358,7 +404,7 @@ export function validatePath(filePath: string): boolean {
   
   // Patrón para detectar rutas absolutas de Windows (C:, D:, etc.)
   const windowsAbsolutePathPattern = /^[A-Za-z]:[\\\/]/;
-  
+  let result: string | null;
   if (windowsAbsolutePathPattern.test(filePath)) {
     // Para rutas absolutas de Windows, verificar solo después del drive letter
     const pathAfterDrive = filePath.substring(2); // Quitar "C:" o similar
@@ -437,4 +483,4 @@ export async function clearSvnCredentials(config: SvnConfig): Promise<SvnRespons
       };
     }
   }
-} 
+}
