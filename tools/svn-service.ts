@@ -761,12 +761,13 @@ export class SvnService {
     };
 
     try {
+
       // Test svn status local
       try {
         await executeSvnCommand(this.config, ['status']);
         results.statusLocal = true;
       } catch (error: any) {
-        const errorMsg = this.categorizeError(error, 'status local');
+        const errorMsg = this.categorizeError(error, 'local status');
         results.errors.push(errorMsg.message);
         if (errorMsg.suggestion) {
           results.suggestions.push(errorMsg.suggestion);
@@ -778,7 +779,7 @@ export class SvnService {
         await executeSvnCommand(this.config, ['status', '--show-updates']);
         results.statusRemote = true;
       } catch (error: any) {
-        const errorMsg = this.categorizeError(error, 'status remoto');
+        const errorMsg = this.categorizeError(error, 'remote status');
         results.errors.push(errorMsg.message);
         if (errorMsg.suggestion) {
           results.suggestions.push(errorMsg.suggestion);
@@ -790,7 +791,7 @@ export class SvnService {
         await executeSvnCommand(this.config, ['log', '--limit', '1']);
         results.logBasic = true;
       } catch (error: any) {
-        const errorMsg = this.categorizeError(error, 'log básico');
+        const errorMsg = this.categorizeError(error, 'basic log');
         results.errors.push(errorMsg.message);
         if (errorMsg.suggestion) {
           results.suggestions.push(errorMsg.suggestion);
@@ -810,7 +811,7 @@ export class SvnService {
       };
 
     } catch (error: any) {
-      results.errors.push(`Error general: ${error.message}`);
+      results.errors.push(`General error: ${error.message}`);
       return {
         success: false,
         data: results,
