@@ -1,44 +1,44 @@
-# 🔧 Solución de Problemas - MCP SVN
+# 🔧 Troubleshooting - MCP SVN
 
-## Problema: "not a working copy"
+## Problem: "not a working copy"
 
-### Error típico:
+### Typical error:
 ```
-❌ Error: El directorio 'C:\tu\directorio' no es un working copy de SVN. 
-Asegúrate de estar en un directorio que contenga un repositorio SVN o hacer checkout primero.
+❌ Error: The directory 'C:\your\directory' is not an SVN working copy.
+Make sure you are in a directory that contains an SVN repository or do a checkout first.
 ```
 
-### Causa:
-Este error ocurre cuando intentas ejecutar comandos SVN (`svn info`, `svn status`, etc.) en un directorio que **no está bajo control de versiones SVN**.
+### Cause:
+This error occurs when you try to run SVN commands (`svn info`, `svn status`, etc.) in a directory that is **not under SVN version control**.
 
-### Soluciones:
+### Solutions:
 
-#### 1. **Cambiar al directorio correcto**
-Si ya tienes un working copy SVN en otro lugar:
+#### 1. **Change to the correct directory**
+If you already have an SVN working copy elsewhere:
 
 ```bash
-# Configurar la variable de entorno para apuntar a tu working copy
-export SVN_WORKING_DIRECTORY="/ruta/a/tu/working-copy"
+# Set the environment variable to point to your working copy
+export SVN_WORKING_DIRECTORY="/path/to/your/working-copy"
 ```
 
-En Windows:
+On Windows:
 ```cmd
-set SVN_WORKING_DIRECTORY=C:\ruta\a\tu\working-copy
+set SVN_WORKING_DIRECTORY=C:\path\to\your\working-copy
 ```
 
-#### 2. **Hacer checkout de un repositorio**
-Si necesitas crear un working copy nuevo:
+#### 2. **Checkout a repository**
+If you need to create a new working copy:
 
 ```bash
-# Usar la herramienta svn_checkout del MCP
+# Use the svn_checkout tool from MCP
 svn_checkout(
-  url: "https://tu-servidor-svn.com/repo/trunk",
-  path: "mi-proyecto"
+  url: "https://your-svn-server.com/repo/trunk",
+  path: "my-project"
 )
 ```
 
-#### 3. **Verificar si un directorio es working copy**
-Busca la carpeta `.svn` oculta:
+#### 3. **Check if a directory is a working copy**
+Look for the hidden `.svn` folder:
 
 **Windows (PowerShell):**
 ```powershell
@@ -50,18 +50,18 @@ Get-ChildItem -Force | Where-Object {$_.Name -like ".svn*"}
 ls -la | grep .svn
 ```
 
-## Configuración del Entorno
+## Environment Configuration
 
-### Variables de Entorno Importantes
+### Important Environment Variables
 
-| Variable | Descripción | Ejemplo |
+| Variable | Description | Example |
 |----------|-------------|---------|
-| `SVN_PATH` | Ruta del ejecutable SVN | `C:/Program Files/TortoiseSVN/bin/svn.exe` |
-| `SVN_WORKING_DIRECTORY` | Directorio de trabajo | `C:/mi-proyecto` |
-| `SVN_USERNAME` | Usuario para autenticación | `usuario@empresa.com` |
-| `SVN_PASSWORD` | Contraseña | `mi-contraseña` |
+| `SVN_PATH` | Path to the SVN executable | `C:/Program Files/TortoiseSVN/bin/svn.exe` |
+| `SVN_WORKING_DIRECTORY` | Working directory | `C:/my-project` |
+| `SVN_USERNAME` | Username for authentication | `user@company.com` |
+| `SVN_PASSWORD` | Password | `my-password` |
 
-### Ejemplo de configuración MCP
+### Example MCP configuration
 
 ```json
 {
@@ -71,104 +71,104 @@ ls -la | grep .svn
       "args": ["@grec0/mcp-svn"],
       "env": {
         "SVN_PATH": "C:/Program Files/TortoiseSVN/bin/svn.exe",
-        "SVN_WORKING_DIRECTORY": "C:/mi-proyecto",
-        "SVN_USERNAME": "mi-usuario",
-        "SVN_PASSWORD": "mi-contraseña"
+        "SVN_WORKING_DIRECTORY": "C:/my-project",
+        "SVN_USERNAME": "my-user",
+        "SVN_PASSWORD": "my-password"
       }
     }
   }
 }
 ```
 
-## Verificación del Sistema
+## System Verification
 
-### 1. Verificar instalación de SVN
+### 1. Check SVN installation
 ```bash
 svn --version
 ```
 
-### 2. Verificar que el MCP funciona
-Usa la herramienta `svn_health_check()` para verificar:
-- ✅ SVN está disponible
-- ✅ Working copy es válido
-- ✅ Repositorio es accesible
+### 2. Check that MCP works
+Use the `svn_health_check()` tool to verify:
+- ✅ SVN is available
+- ✅ Working copy is valid
+- ✅ Repository is accessible
 
-### 3. Testear comandos básicos
+### 3. Test basic commands
 ```bash
-# Verificar info del working copy
+# Check working copy info
 svn info
 
-# Ver estado de archivos
+# Check file status
 svn status
 ```
 
-## Flujo de Trabajo Típico
+## Typical Workflow
 
-### 1. **Primer uso - Hacer checkout**
+### 1. **First use - Checkout**
 ```
-1. svn_checkout(url: "https://servidor/repo", path: "mi-proyecto")
-2. Configurar SVN_WORKING_DIRECTORY hacia "mi-proyecto"
-3. Usar otros comandos SVN
-```
-
-### 2. **Uso regular - Trabajar con archivos**
-```
-1. svn_info() - Ver información del repositorio
-2. svn_status() - Ver archivos modificados
-3. svn_add(paths: ["nuevo-archivo.txt"])
-4. svn_commit(message: "Añadir nuevo archivo")
+1. svn_checkout(url: "https://server/repo", path: "my-project")
+2. Set SVN_WORKING_DIRECTORY to "my-project"
+3. Use other SVN commands
 ```
 
-### 3. **Mantenimiento**
+### 2. **Regular use - Work with files**
 ```
-1. svn_update() - Actualizar desde el servidor
-2. svn_cleanup() - Limpiar working copy si hay problemas
+1. svn_info() - View repository information
+2. svn_status() - View modified files
+3. svn_add(paths: ["new-file.txt"])
+4. svn_commit(message: "Add new file")
 ```
 
-## Errores Comunes y Soluciones
+### 3. **Maintenance**
+```
+1. svn_update() - Update from server
+2. svn_cleanup() - Clean working copy if there are problems
+```
+
+## Common Errors and Solutions
 
 ### Error: "SVN command failed with code 1"
-- **Causa**: Comando SVN falló
-- **Solución**: Ver el mensaje de error específico para más detalles
+- **Cause**: SVN command failed
+- **Solution**: Check the specific error message for more details
 
 ### Error: "SVN is not available"
-- **Causa**: SVN no está instalado o no está en PATH
-- **Solución**: Instalar SVN o configurar SVN_PATH
+- **Cause**: SVN is not installed or not in PATH
+- **Solution**: Install SVN or set SVN_PATH
 
 ### Error: "Authentication failed"
-- **Causa**: Credenciales incorrectas
-- **Solución**: Verificar SVN_USERNAME y SVN_PASSWORD
+- **Cause**: Incorrect credentials
+- **Solution**: Check SVN_USERNAME and SVN_PASSWORD
 
 ### Error: "E215004: No more credentials or we tried too many times"
-- **Causa**: Demasiados intentos de autenticación fallidos - credenciales pueden estar cacheadas incorrectamente
-- **Solución**: Ejecutar `svn_clear_credentials()` para limpiar el cache de credenciales SVN
+- **Cause**: Too many failed authentication attempts - credentials may be incorrectly cached
+- **Solution**: Run `svn_clear_credentials()` to clear the SVN credential cache
 
 ### Error: "Working copy locked"
-- **Causa**: Operación SVN anterior se interrumpió
-- **Solución**: Ejecutar `svn_cleanup()`
+- **Cause**: Previous SVN operation was interrupted
+- **Solution**: Run `svn_cleanup()`
 
-## Herramientas de Diagnóstico
+## Diagnostic Tools
 
-### Comando de diagnóstico completo
+### Full diagnostic command
 ```javascript
-// Verificar todo el sistema
+// Check the whole system
 await svn_health_check();
 
-// Si hay problemas, verificar paso a paso:
-1. Verificar SVN: svn --version
-2. Verificar directorio: ls -la .svn
-3. Verificar conexión: svn info --non-interactive
+// If there are problems, check step by step:
+1. Check SVN: svn --version
+2. Check directory: ls -la .svn
+3. Check connection: svn info --non-interactive
 ```
 
-## Soporte
+## Support
 
-Si el problema persiste después de seguir esta guía:
+If the problem persists after following this guide:
 
-1. **Revisar los logs** del MCP para errores específicos
-2. **Verificar permisos** de archivos y directorios
-3. **Probar comandos SVN manualmente** en la terminal
-4. **Verificar conectividad** al servidor SVN
+1. **Check the MCP logs** for specific errors
+2. **Check file and directory permissions**
+3. **Try SVN commands manually** in the terminal
+4. **Check connectivity** to the SVN server
 
 ---
 
-**💡 Consejo**: Siempre ejecuta `svn_health_check()` primero para diagnosticar problemas de configuración. 
+**💡 Tip**: Always run `svn_health_check()` first to diagnose configuration problems.

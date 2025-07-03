@@ -1,37 +1,37 @@
-# SVN MCP - Implementación por Etapas
+# SVN MCP - Step-by-Step Implementation
 
-## 🎯 Objetivo
-Crear un MCP (Model Context Protocol) completo para Subversion (SVN) que permita a agentes de IA:
-- Entender la estructura de ramas y repositorios
-- Ver cambios y historial
-- Realizar todas las operaciones SVN disponibles
-- Funcionar correctamente en entornos Windows
+## 🎯 Objective
+Create a complete MCP (Model Context Protocol) for Subversion (SVN) that allows AI agents to:
+- Understand the structure of branches and repositories
+- View changes and history
+- Perform all available SVN operations
+- Work correctly in Windows environments
 
-## 📋 Checklist de Implementación
+## 📋 Implementation Checklist
 
-### Etapa 1: Estructura Base del Proyecto ✅
-- [x] Crear estructura de directorios
-- [x] Configurar package.json
-- [x] Configurar TypeScript (tsconfig.json)
-- [x] Crear archivo de versión
-- [x] Configurar tipos básicos
-- [x] Crear utilidades para ejecutar comandos SVN
+### Stage 1: Base Project Structure ✅
+- [x] Create directory structure
+- [x] Configure package.json
+- [x] Configure TypeScript (tsconfig.json)
+- [x] Create version file
+- [x] Configure basic types
+- [x] Create utilities to run SVN commands
 
-### Etapa 2: Operaciones Básicas de Repositorio ✅
-- [x] **svn_info** - Obtener información del repositorio
-- [x] **svn_status** - Ver estado de archivos
-- [x] **svn_log** - Ver historial de commits
-- [x] **svn_diff** - Ver diferencias entre versiones
-- [x] **svn_checkout** - Clonar repositorio
-- [x] **svn_update** - Actualizar working copy
+### Stage 2: Basic Repository Operations ✅
+- [x] **svn_info** - Get repository information
+- [x] **svn_status** - View file status
+- [x] **svn_log** - View commit history
+- [x] **svn_diff** - View differences between versions
+- [x] **svn_checkout** - Clone repository
+- [x] **svn_update** - Update working copy
 
-### Etapa 3: Gestión de Archivos ✅
-- [x] **svn_add** - Añadir archivos al control de versiones
-- [x] **svn_delete** - Eliminar archivos
-- [ ] **svn_move** - Mover/renombrar archivos
-- [ ] **svn_copy** - Copiar archivos
-- [x] **svn_revert** - Revertir cambios
-- [x] **svn_commit** - Confirmar cambios
+### Stage 3: File Management ✅
+- [x] **svn_add** - Add files to version control
+- [x] **svn_delete** - Delete files
+- [ ] **svn_move** - Move/rename files
+- [ ] **svn_copy** - Copy files
+- [x] **svn_revert** - Revert changes
+- [x] **svn_commit** - Commit changes
 
 ### Etapa 4: Gestión de Ramas (Branching) 🔄
 - [ ] **svn_branch_create** - Crear nueva rama
